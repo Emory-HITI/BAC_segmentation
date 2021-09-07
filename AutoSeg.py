@@ -31,39 +31,22 @@ def preprocess_img(img_path):
     new_image = cv2.medianBlur(imgray,figure_size)
     return new_image
 
-X_4096 = []
-for i in range(0, 4096, 480): 
-
-    if i+512 > 4096:
-        X_4096.append(4096-512)
-        break
-    X_4096.append(i)
+ 
+def get_slices(n): # help to determine where to start splitting patches
+    slices = []
+    for i in range(0, n, 480): 
+        if i + Image_Size[0] >= n:
+            slices.append(n-Image_Size[0])
+            break
+        slices.append(i)
+    return slices
     
-X_3328 = []
-for i in range(0, 3328, 480): 
     
-    if i+512 > 3328:
-        X_3328.append(3328-512)
-        break
-    X_3328.append(i)
-   
-X_2560 = []
-for i in range(0, 2560, 480): 
-    if i + 512 >= 2560:
-        X_2560.append(2560-512)
-        break
-    X_2560.append(i)  
-    
-def crop_img(img, name, size, savepath):
+def crop_img(img, name, size, savepath): # crop mammogram into patches and save them to a temp place
     x, y = img.shape
-    if x == 4096:
-        Xs = X_4096
-    else:
-        Xs = X_3328
-    if y == 3328:
-        Ys = X_3328
-    else:
-        Ys = X_2560
+    Xs = get_slices(x)
+    Ys = get_slices(y)
+
     save_ext  = ".png"
     cnt = 0
     for i in Xs:
@@ -79,11 +62,9 @@ def generate_patches(datapath, temppath, imgname):
     if not os.path.exists(os.path.join(temppath, imgname[:-4])):
         os.makedirs(os.path.join(temppath, imgname[:-4]))
     patchpath = os.path.join(temppath, imgname[:-4])
-#     print(patchpath)
     img = preprocess_img(datapath+imgname)
-    crop_img(img,imgname,512,patchpath)
+    crop_img(img,imgname,Image_Size[0],patchpath)
     return patchpath, img
-
         
 tfms = transforms.Compose([transforms.ToTensor(), transforms.Normalize(0.2843, 0.1712)])
 

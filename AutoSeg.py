@@ -22,6 +22,7 @@ from CGUNet import CGUNet
 from PIL import Image, ImageEnhance
 
 Image_Size = [512, 512]
+prob_thre = 0.5 #probability threshold to determine BAC pixels, >=prob_thre: bac, <prob_thre: normal/background
 
 #generate patches
 def preprocess_img(img_path):
@@ -96,7 +97,7 @@ def evaluate(img, imgname, wholeimg_rootdir):
     prob = np.sum(pre_mask)
     pre_mask_thre = (pre_mask>0.5).astype(int)
     area_thre = np.sum(pre_mask_thre)
-    pre_image = img[np.where(pre_mask>0.5)]
+    pre_image = img[np.where(pre_mask>prob_thre)]
     pre_image2 = pre_image[np.where(pre_image >= 100)]
     sum_intensity = sum(pre_image)
     sum_intensity_100 = sum(pre_image2)

@@ -1,17 +1,13 @@
 import os
 import cv2
-import csv
-import json
 import shutil
-import random
-import logging
 import argparse
-import collections
 import numpy as np
-from glob import glob
 from os import listdir
-from os.path import splitext
-from PIL import Image, ImageEnhance
+
+import torch
+from torch.utils.data import DataLoader
+from dataset import MammoDataset
 
 Image_Size = [512, 512]
 
@@ -50,7 +46,6 @@ def crop_img(img, name, size, savepath): # crop mammogram into patches and save 
             save_imgname = savepath+'/'+name[:-4]+"_"+str(i)+"_"+str(j)+save_ext
             cv2.imwrite(save_imgname, np.array(cropped_image))
 
-      
 def generate_patches(datapath, temppath, imgname):        
     if not os.path.exists(os.path.join(temppath, imgname[:-4])):
         os.makedirs(os.path.join(temppath, imgname[:-4]))
@@ -59,8 +54,6 @@ def generate_patches(datapath, temppath, imgname):
     crop_img(img,imgname,Image_Size[0],patchpath)
     return patchpath, img        
   
-  
-
 def evaluate(img, imgname, wholeimg_rootdir, prob_thre):
     # area, probability, threshold, intensity>100
     breastarea = np.sum((img>0).astype(int))
@@ -80,14 +73,14 @@ def evaluate(img, imgname, wholeimg_rootdir, prob_thre):
     
 def predict(net, datapath, temppath, imgname, prob_thre): 
     testdir, image = generate_patches(datapath, temppath, imgname)
-    testset = MammoDataset(rootdir=testdir, img_transform = tfms)
+    testset = MammoDataset(rootdir=testdir)
     testloader = DataLoader(testset, batch_size=8, shuffle=False, pin_memory=torch.cuda.is_available(),num_workers=8) 
     wholeimg_rootdir = testdir+"whole"
-#     print("wholeimg_rootdir: ",wholeimg_rootdir)
+    print("wholeimg_rootdir: ",wholeimg_rootdir)
     if os.path.exists(wholeimg_rootdir):
         return evaluate(image, imgname, wholeimg_rootdir, prob_thre)
     patch_pre_mask_dir = testdir+"patch"
-#     print("patch_pre_mask_dir: ",patch_pre_mask_dir)
+    print("patch_pre_mask_dir: ",patch_pre_mask_dir)
     with torch.no_grad():
         for batch_idx, (img, imgnames) in enumerate(testloader):
             img = img.type(torch.DoubleTensor)
@@ -106,6 +99,7 @@ def predict(net, datapath, temppath, imgname, prob_thre):
     patchsize = 512
     for prename in premask_names:
         _, x, y = prename[:-4].split("_")
+        print(x, y)
         x = int(x)
         y = int(y)
         patch_mask = np.load(patch_pre_mask_dir+'/'+prename)

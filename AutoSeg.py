@@ -1,28 +1,44 @@
 import os
 import cv2
 import csv
-import numpy as np
 import json
-import random
-import argparse
 import shutil
+import random
+import logging
+import argparse
+import collections
+import numpy as np
+from glob import glob
+from os import listdir
+from os.path import splitext
+from PIL import Image, ImageEnhance
+
 import torch
+import torchvision
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
-from os.path import splitext
-from os import listdir
-from glob import glob
-import logging
-import torchvision
 import torchvision.transforms as transforms
 from torch.utils.data import Dataset, DataLoader
-import collections
-from CGUNet import CGUNet
-from PIL import Image, ImageEnhance
+
+from SCUNet import SCUNet
 
 Image_Size = [512, 512]
-prob_thre = 0.5 #probability threshold to determine BAC pixels, >=prob_thre: bac, <prob_thre: normal/background
+
+# Instantiate the parser
+parser = argparse.ArgumentParser()
+parser.add_argument('--ckptpath', type=str,
+                    default="./SCUNet_dice_512_512_best_nosigmoid.pt", 
+                    help='path to checkpoint')
+parser.add_argument('--datapath', type=str, default='../mammo-imgs/xxx/',
+                    help='path to the image folder that contains mammogram data ending with .png ')
+parser.add_argument('--temppath', type=str, default='../temp/', 
+                    help='a temp folder to store intermediate results, clean results will be left after the code running done')
+parser.add_argument('--evalpath', type=str, default='../temp/evaluation_all.csv', 
+                    help='path to a csv file to save all the statical results collected during evaluation')
+parser.add_argument('--prob_thre', type=float, default=0.5, 
+                    help='probability threshold to determine BAC pixels, >=prob_thre: bac, <prob_thre: normal/background')
+
 
 #generate patches
 def preprocess_img(img_path):
@@ -90,7 +106,7 @@ class MammoDataset(Dataset):
         
         return torch.squeeze(image, dim = 0).type(torch.DoubleTensor), fname
 
-def evaluate(img, imgname, wholeimg_rootdir):
+def evaluate(img, imgname, wholeimg_rootdir, prob_thre):
     # area, probability, threshold, intensity>100
     breastarea = np.sum((img>0).astype(int))
     pre_mask = np.load(wholeimg_rootdir+'/'+imgname[:-4]+"_premask.npy")
@@ -106,24 +122,19 @@ def evaluate(img, imgname, wholeimg_rootdir):
     print("breastarea:", breastarea, " prob:", prob, " area_0.5:", area_thre, " sum_intensity:", sum_intensity, " sum_intensity_100:", sum_intensity_100, " area_100:", sum_pixels_100, " image.size:", imgsize)
     return breastarea, prob, area_thre, sum_intensity, sum_intensity_100, sum_pixels_100, imgsize
     
-
- 
     
-def predict(net, datapath, temppath, imgname): 
+def predict(net, datapath, temppath, imgname, prob_thre): 
     testdir, image = generate_patches(datapath, temppath, imgname)
-#     print("testdir: ", testdir)
     testset = MammoDataset(rootdir=testdir, img_transform = tfms)
-    testloader = DataLoader(testset, batch_size=8, shuffle=False, pin_memory=torch.cuda.is_available(),num_workers=8)
-#     print(checkpoint['valdice']) 
+    testloader = DataLoader(testset, batch_size=8, shuffle=False, pin_memory=torch.cuda.is_available(),num_workers=8) 
     wholeimg_rootdir = testdir+"whole"
-    print("wholeimg_rootdir: ",wholeimg_rootdir)
+#     print("wholeimg_rootdir: ",wholeimg_rootdir)
     if os.path.exists(wholeimg_rootdir):
-        return evaluate(image, imgname, wholeimg_rootdir)
+        return evaluate(image, imgname, wholeimg_rootdir, prob_thre)
     patch_pre_mask_dir = testdir+"patch"
-    print("patch_pre_mask_dir: ",patch_pre_mask_dir)
+#     print("patch_pre_mask_dir: ",patch_pre_mask_dir)
     with torch.no_grad():
         for batch_idx, (img, imgnames) in enumerate(testloader):
-#             print(imgnames)
             img = img.type(torch.DoubleTensor)
             pre_mask = net(img)
             pmask = pre_mask.data.cpu().numpy()    
@@ -153,10 +164,12 @@ def predict(net, datapath, temppath, imgname):
         shutil.rmtree(testdir) 
     if os.path.exists(patch_pre_mask_dir):
         shutil.rmtree(patch_pre_mask_dir)
-    return evaluate(image, imgname, wholeimg_rootdir)
+    return evaluate(image, imgname, wholeimg_rootdir, prob_thre)
 
+# parse the arguments
+args = parser.parse_args()
 
-if __name__ == '__main__':
+def main():
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print("Using device {}".format(torch.cuda.device_count()))
@@ -165,28 +178,27 @@ if __name__ == '__main__':
     else:
         is_gpu = False 
     
-    net = CGUNet()
-    net = net.double()
+    net = SCUNet().double()
     print("Let's use", torch.cuda.device_count(), "GPUs!")
     net = nn.DataParallel(net)    
-    checkpoint = torch.load("CGUNet_dice_512_512_best_nosigmoid.pt")
+    checkpoint = torch.load(args.ckptpath)
     net.load_state_dict(checkpoint['model_state_dict'])
     net.to(device)
     net.eval()    
     
-    datapath = './Progression/new-extracted-imgs/00f48b1743fd44fef8a66621fcf10296cf6dc4e4c31153c1965e6002/00001MG100215297_20100929/'
-    temppath = './temp/'
-    
-    evalpath = './temp/evaluation_all.csv'
-    
+    datapath = args.datapath
+    temppath = args.emppath    
+    evalpath = args.evalpath
     
     imgnames = [x for x in os.listdir(datapath) if x.endswith(".png")]
     
     for imgname in imgnames:
         print("Processing: ",imgname)
-        breastarea, pm, am, sim, tamx, tsimx, imgsize = predict(net, datapath, temppath, imgname)
+        breastarea, pm, am, sim, tamx, tsimx, imgsize = predict(net, datapath, temppath, imgname, args.prob_thre)
         with open(evalpath, 'w', newline='') as file:
             writer = csv.writer(file)
             writer.writerow([imgname, breastarea, pm, am, sim, tamx, tsimx, imgsize])
-        break
+
         
+if __name__ == '__main__':
+    main()

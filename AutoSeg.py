@@ -1,31 +1,14 @@
 import os
-import cv2
 import csv
-import json
-import shutil
-import random
-import logging
 import argparse
-import collections
 import numpy as np
-from glob import glob
-from os import listdir
-from os.path import splitext
-from PIL import Image, ImageEnhance
 
 import torch
-import torchvision
 import torch.nn as nn
-import torch.nn.functional as F
-from torch.autograd import Variable
-import torchvision.transforms as transforms
-from torch.utils.data import Dataset, DataLoader
 
-from dataset import MammoDataset
 from SCUNet import SCUNet
 from utils import *
 
-Image_Size = [512, 512]
 
 # Instantiate the parser
 parser = argparse.ArgumentParser()
@@ -64,7 +47,7 @@ def main():
     net.eval()    
     
     datapath = args.datapath
-    temppath = args.emppath    
+    temppath = args.temppath    
     evalpath = args.evalpath
     
     imgnames = [x for x in os.listdir(datapath) if x.endswith(".png")]
@@ -75,6 +58,7 @@ def main():
         with open(evalpath, 'w', newline='') as file:
             writer = csv.writer(file)
             writer.writerow([imgname, breastarea, pm, am, sim, tamx, tsimx, imgsize])
+        break
 
         
 if __name__ == '__main__':

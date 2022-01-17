@@ -1,7 +1,6 @@
 import os
 import cv2
 import shutil
-import argparse
 import numpy as np
 from os import listdir
 
@@ -99,7 +98,6 @@ def predict(net, datapath, temppath, imgname, prob_thre):
     patchsize = 512
     for prename in premask_names:
         _, x, y = prename[:-4].split("_")
-        print(x, y)
         x = int(x)
         y = int(y)
         patch_mask = np.load(patch_pre_mask_dir+'/'+prename)

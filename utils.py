@@ -3,6 +3,7 @@ import cv2
 import shutil
 import numpy as np
 from os import listdir
+from PIL import Image
 
 import torch
 from torch.utils.data import DataLoader
@@ -58,7 +59,7 @@ def evaluate(img, imgname, wholeimg_rootdir, prob_thre):
     breastarea = np.sum((img>0).astype(int))
     pre_mask = np.load(wholeimg_rootdir+'/'+imgname[:-4]+"_premask.npy")
     prob = np.sum(pre_mask)
-    pre_mask_thre = (pre_mask>0.5).astype(int)
+    pre_mask_thre = (pre_mask>prob_thre).astype(int)
     area_thre = np.sum(pre_mask_thre)
     pre_image = img[np.where(pre_mask>prob_thre)]
     pre_image2 = pre_image[np.where(pre_image >= 100)]
@@ -66,7 +67,10 @@ def evaluate(img, imgname, wholeimg_rootdir, prob_thre):
     sum_intensity_100 = sum(pre_image2)
     sum_pixels_100 = sum(pre_image >= 100)
     imgsize = img.shape
-    print("breastarea:", breastarea, " prob:", prob, " area_0.5:", area_thre, " sum_intensity:", sum_intensity, " sum_intensity_100:", sum_intensity_100, " area_100:", sum_pixels_100, " image.size:", imgsize)
+    pre_mask_thre = np.array(pre_mask_thre*255, dtype=np.uint8)
+    pre_mask_img = Image.fromarray(pre_mask_thre)
+    pre_mask_img.save(wholeimg_rootdir+'/'+imgname[:-4]+"_premask_"+str(prob_thre)+".png")
+    print("breastarea:", breastarea, " prob:", prob, " area_0.65:", area_thre, " sum_intensity:", sum_intensity, " sum_intensity_100:", sum_intensity_100, " area_100:", sum_pixels_100, " image.size:", imgsize)
     return breastarea, prob, area_thre, sum_intensity, sum_intensity_100, sum_pixels_100, imgsize
     
     

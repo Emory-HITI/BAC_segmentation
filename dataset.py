@@ -12,7 +12,7 @@ Image_Size = [512, 512]
 
 
 class MammoDataset(Dataset):
-    def __init__(self, rootdir, img_transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize(0.2843, 0.1712)])):
+    def __init__(self, rootdir, img_transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize(0.2813, 0.1256)])):
         self.rootdir = rootdir
         self.img_transform = img_transform
         self.namelists = [x for x in os.listdir(rootdir) if x.endswith(".png")]

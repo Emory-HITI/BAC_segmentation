@@ -58,7 +58,7 @@ def main():
         with open(evalpath, 'w', newline='') as file:
             writer = csv.writer(file)
             writer.writerow([imgname, breastarea, pm, am, sim, tamx, tsimx, imgsize])
-        break
+
 
         
 if __name__ == '__main__':

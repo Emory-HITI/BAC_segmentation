@@ -13,7 +13,7 @@ from utils import *
 # Instantiate the parser
 parser = argparse.ArgumentParser()
 parser.add_argument('--ckptpath', type=str,
-                    default="./SCUNet_dice_512_512_best_nosigmoid.pt", 
+                    default="./SCUNet_dice_512_512_best.pt", 
                     help='path to checkpoint')
 parser.add_argument('--datapath', type=str, default='../mammo-imgs/xxx/',
                     help='path to the image folder that contains mammogram data ending with .png ')

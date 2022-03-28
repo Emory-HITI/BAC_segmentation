@@ -15,13 +15,13 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--ckptpath', type=str,
                     default="./SCUNet_dice_512_512_best.pt", 
                     help='path to checkpoint')
-parser.add_argument('--datapath', type=str, default='../mammo-imgs/xxx/',
+parser.add_argument('--datapath', type=str, default='/home/jupyter-anbhimi/bac_16bits/calcium_mammo_pngs/',
                     help='path to the image folder that contains mammogram data ending with .png ')
-parser.add_argument('--temppath', type=str, default='../temp/', 
+parser.add_argument('--temppath', type=str, default='/data/BAC/Sophie/Code/Annotation/bac_16bits_preds/', 
                     help='a temp folder to store intermediate results, clean results will be left after the code running done')
-parser.add_argument('--evalpath', type=str, default='../temp/evaluation_all.csv', 
+parser.add_argument('--evalpath', type=str, default='/data/BAC/Sophie/Code/Annotation/bac_16bits_preds/evaluation_all.csv', 
                     help='path to a csv file to save all the statical results collected during evaluation')
-parser.add_argument('--prob_thre', type=float, default=0.5, 
+parser.add_argument('--prob_thre', type=float, default=0.65, 
                     help='probability threshold to determine BAC pixels, >=prob_thre: bac, <prob_thre: normal/background')
 
 
@@ -51,14 +51,15 @@ def main():
     evalpath = args.evalpath
     
     imgnames = [x for x in os.listdir(datapath) if x.endswith(".png")]
-    
-    for imgname in imgnames:
+    with open(evalpath, 'w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(["imgpath", "breastarea", "prob", "area_thre_"+str(args.prob_thre), "sum_intensity", "sum_intensity_100", "sum_pixels_100", "imgsize"])
+    for  imgname in imgnames:
         print("Processing: ",imgname)
         breastarea, pm, am, sim, tamx, tsimx, imgsize = predict(net, datapath, temppath, imgname, args.prob_thre)
-        with open(evalpath, 'w', newline='') as file:
+        with open(evalpath, 'a', newline='') as file:
             writer = csv.writer(file)
             writer.writerow([imgname, breastarea, pm, am, sim, tamx, tsimx, imgsize])
-
 
         
 if __name__ == '__main__':

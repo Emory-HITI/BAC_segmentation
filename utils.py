@@ -51,8 +51,11 @@ def generate_patches(datapath, temppath, imgname):
         os.makedirs(os.path.join(temppath, imgname[:-4]))
     patchpath = os.path.join(temppath, imgname[:-4])
     img = preprocess_img(datapath+imgname)
+    wholeimg_rootdir = patchpath+"whole"
+    if os.path.exists(wholeimg_rootdir):
+        return patchpath, img 
     crop_img(img,imgname,Image_Size[0],patchpath)
-    return patchpath, img        
+    return patchpath, img         
   
 def evaluate(img, imgname, wholeimg_rootdir, prob_thre):
     # area, probability, threshold, intensity>100
@@ -76,12 +79,13 @@ def evaluate(img, imgname, wholeimg_rootdir, prob_thre):
     
 def predict(net, datapath, temppath, imgname, prob_thre): 
     testdir, image = generate_patches(datapath, temppath, imgname)
-    testset = MammoDataset(rootdir=testdir)
-    testloader = DataLoader(testset, batch_size=8, shuffle=False, pin_memory=torch.cuda.is_available(),num_workers=8) 
     wholeimg_rootdir = testdir+"whole"
     print("wholeimg_rootdir: ",wholeimg_rootdir)
     if os.path.exists(wholeimg_rootdir):
         return evaluate(image, imgname, wholeimg_rootdir, prob_thre)
+    testset = MammoDataset(rootdir=testdir)
+    testloader = DataLoader(testset, batch_size=8, shuffle=False, pin_memory=torch.cuda.is_available(),num_workers=8) 
+    
     patch_pre_mask_dir = testdir+"patch"
     print("patch_pre_mask_dir: ",patch_pre_mask_dir)
     with torch.no_grad():

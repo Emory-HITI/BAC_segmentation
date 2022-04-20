@@ -23,8 +23,10 @@ This repository contains PyTorch implementation for model evaluation of the foll
 To run the model on your own mammogram datasets, run the following commands:
 
 ``` shell
-python AutoSeg.py --datapath path/to/mammogram_png/folder 
+python AutoSeg.py --ckptpath path/to/checkpoint --datapath path/to/mammogram_png/folder --temppath path/to/temp_folder_for_intermediate_results  --evalpath path/to/folder_for_saving_csv_results --prob_thre probability_threshold
 ``` 
+Please look into the argument part of AutoSeg.py to learn more details for runnning the code
+
 ## Cite SCU-Net
 If you use this repository or would like to refer the paper, please use the following BibTeX entry
 ```

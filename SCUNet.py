@@ -1,4 +1,3 @@
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -280,7 +279,8 @@ class OutputInjection(nn.Module):
         for up in self.up:
             input = up(input)
         return input
-    
+
+
 
 class double_conv(nn.Module):
     '''(conv => BN => ReLU) * 2'''
@@ -345,6 +345,10 @@ class up(nn.Module):
         x1 = F.pad(x1, [diffX // 2, diffX - diffX // 2,
                         diffY // 2, diffY - diffY // 2])
 
+        # for padding issues, see
+        # https://github.com/HaiyongJiang/U-Net-Pytorch-Unstructured-Buggy/commit/0e854509c2cea854e247a9c615f175f76fbb2e3a
+        # https://github.com/xiaopeng-liao/Pytorch-UNet/commit/8ebac70e633bac59fc22bb5195e513d5832fb3bd
+
         x = torch.cat([x2, x1], dim=1)
         x = self.conv(x)
         return x
@@ -360,13 +364,10 @@ class outconv(nn.Module):
         return x
 
 
+
 class SCUNet(nn.Module):
     def __init__(self, classes = 1):
         super(SCUNet, self).__init__()
-        """
-        args:
-           classes: number of classes for prediction, if for binary classes, use classes = 1 
-        """
         self.level1_0 = ConvBNPReLU(3, 16, 3, 2)
         self.level1_1 = ConvBNPReLU(16, 16, 3, 1)                          
         self.level1_2 = ConvBNPReLU(16, 16, 3, 1)
@@ -398,7 +399,7 @@ class SCUNet(nn.Module):
         up1 = self.up3(output2, output1)
         up2 = self.up4(up1, output0)
         up3 = F.interpolate(up2, scale_factor=2, mode='bilinear', align_corners=True)
-        up3 = self.outc(up3)
-       
+        up3 = self.outc(up3)        
+
         return up3    
-    
+

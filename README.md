@@ -2,7 +2,7 @@
 
 This repository contains PyTorch implementation for model evaluation of the following paper: SCU-Net: A deep learning method for segmentation and quantification of breast arterial calcifications on mammograms (https://pubmed.ncbi.nlm.nih.gov/34328661/, https://www.medrxiv.org/content/10.1101/2021.07.30.21261406v1.full.pdf).
 
-# Installation
+## Installation
 1. First clone the repository
    ```
    git clone https://github.com/Emory-HITI/BAC_segmentation.git
@@ -19,6 +19,14 @@ This repository contains PyTorch implementation for model evaluation of the foll
    ```
    pip install --user --requirement requirements.txt
    ```
+## Model weights
+
+SCUNet_dice_512_512_best_nosigmoid.pt is the model that proposed and evluated in the paper and works the best for 8-bit mammogram images with BAC. 
+
+SCUNet_dice_512_512_best.pt is the model that works the best for 16-bit mammogram images with BAC. 
+
+SCU_Net_512_512_best_BCE_pos_all.pt is the model that works the best for mammogram images with  and without BAC. 
+
 ## Evaluation
 To run the model on your own mammogram datasets, run the following commands:
 
